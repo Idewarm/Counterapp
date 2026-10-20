@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Platform {
+  TIKTOK
+  INSTAGRAM
+  FACEBOOK
+  LINKEDIN
+}
+
+enum PostStatus {
+  DRAFT
+  APPROVED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  brands    Brand[]
+}
+
+model Brand {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  logoUrl        String?
+  /// { primary: string; secondary: string[] } — hex codes like "#FFD60A"
+  colors         Json
+  toneOfVoice    String        @default("")
+  targetAudience String        @default("")
+  styleKeywords  String[]      @default([])
+  description    String        @default("")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  posts          ContentPost[]
+
+  @@index([userId])
+}
+
+model ContentPost {
+  id            String     @id @default(cuid())
+  brandId       String
+  brand         Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  platform      Platform
+  scheduledDate DateTime
+  caption       String     @db.Text
+  hashtags      String[]   @default([])
+  visualConcept String     @db.Text
+  /// Content pillar / theme this post belongs to (from the monthly strategy)
+  pillar        String     @default("")
+  status        PostStatus @default(DRAFT)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([brandId, scheduledDate])
+}
